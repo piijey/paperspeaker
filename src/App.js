@@ -12,15 +12,18 @@ function App() {
   };
 
 
-  const [speechFilePath, setSpeechFilePath] = useState('');
+  const [speechURL, setSpeechURL] = useState('');
 
   useEffect(() => {
     setInputValue('');
     if ( submittedValue.length > 0 ) {
       if (window.electron && window.electron.createSpeech) {
-        window.electron.createSpeech(submittedValue).then((filePath) => {
-          setSpeechFilePath(process.env.PUBLIC_URL + filePath)
-          setSysMessage(`Speech File: ${filePath}`);
+        setSysMessage(`creating speech ...`);
+        window.electron.createSpeech(submittedValue).then((buffer) => {
+          const blob = new Blob([buffer], {type:'audio/mp3'});
+          const url = URL.createObjectURL(blob);
+          setSpeechURL(url)
+          setSysMessage(`Speech File is Ready.`);
         });
       } else {
         setSysMessage('text-to-speech を利用するには Electron で実行してね');
@@ -31,12 +34,12 @@ function App() {
   const audioRef = useRef(null);
 
   useEffect(() => {
-    if ( !speechFilePath ){ return }
+    if ( !speechURL ){ return }
     const audioElement = audioRef.current;
-    audioElement.src = speechFilePath;
+    audioElement.src = speechURL;
     audioElement.play()
-      .catch(err => setSysMessage(`failed to play audio: ${speechFilePath}, ${err}`))
-  }, [speechFilePath]);
+      .catch(err => setSysMessage(`failed to play audio: ${err}`))
+  }, [speechURL]);
 
 
   return (
@@ -45,7 +48,7 @@ function App() {
         <h1>
           PaperSpeaker
         </h1>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} id="submit-text">
           <input
             type="text"
             value={inputValue}
